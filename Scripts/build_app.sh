@@ -5,7 +5,7 @@
 #   3. .icns assembly from rendered brand assets
 #   4. .app bundle assembly with full Info.plist
 #   5. Ad-hoc codesign + verification
-#   6. Drag-install DMG
+#   6. Distribution archives: ZIP always, DMG when hdiutil cooperates
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -119,16 +119,20 @@ echo "▶︎ Step 6/6 · Distribution archive"
 rm -f "dist/$APP_NAME-$VERSION-universal.dmg" "dist/$APP_NAME-$VERSION.zip"
 ln -sfn /Applications "$STAGE/Applications"
 
-# A wedged root-owned diskimages-helper can block hdiutil ("Resource busy").
-# DMG failure must not fail the build — fall back to a ZIP distribution.
+# The ZIP is produced unconditionally — it is the artifact CI, the release
+# workflow and the install instructions all rely on. The DMG is a nicety on
+# top: a wedged root-owned diskimages-helper can deny it ("Resource busy"),
+# and that must never fail the build or leave us with no archive at all.
+ditto -c -k --sequesterRsrc --keepParent "$APP" "dist/$APP_NAME-$VERSION.zip"
+echo "ZIP created."
+
 if hdiutil create -volname "$APP_NAME $VERSION" \
                   -srcfolder "$STAGE" \
                   -ov -format UDZO \
                   "dist/$APP_NAME-$VERSION-universal.dmg" >/dev/null 2>&1; then
     echo "DMG created."
 else
-    echo "hdiutil unavailable (wedged diskimages-helper?) — falling back to ZIP."
-    ditto -c -k --sequesterRsrc --keepParent "$APP" "dist/$APP_NAME-$VERSION.zip"
+    echo "DMG skipped — hdiutil unavailable (wedged diskimages-helper?); the ZIP stands alone."
 fi
 
 echo ""

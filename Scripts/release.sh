@@ -124,9 +124,11 @@ git tag -a "v$NEXT" -m "ClipVault $NEXT"
 trap - ERR
 
 echo ""
-echo "✔ Released v$NEXT locally. To publish:"
+ARTIFACTS="$(ls dist/ClipVault-"$NEXT"*.zip dist/ClipVault-"$NEXT"*.dmg 2>/dev/null | tr '\n' ' ')"
+echo "✔ Released v$NEXT locally. Artifacts: $ARTIFACTS"
+echo "  To publish:"
 echo "    git push origin HEAD --follow-tags"
-echo "    gh release create v$NEXT dist/ClipVault-$NEXT*.zip dist/ClipVault-$NEXT*.dmg \\"
+echo "    gh release create v$NEXT $ARTIFACTS \\"
 echo "        --title \"ClipVault $NEXT\" --notes-from-tag"
 echo ""
 echo "  (pushing the tag also triggers .github/workflows/release.yml, which builds"

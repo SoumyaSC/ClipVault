@@ -53,8 +53,9 @@ _Nothing yet._
 
 ## Earlier releases
 
-1.0.1 – 1.0.6 predate this changelog; see the git history and the archives in
-`dist/` for those builds.
+1.0.1 – 1.0.6 predate this repository. They were built and installed locally
+before the project was put under version control, so there is no commit, tag, or
+published archive for them.
 
 [Unreleased]: https://github.com/OWNER/ClipVault/compare/v1.0.7...HEAD
 [1.0.7]: https://github.com/OWNER/ClipVault/releases/tag/v1.0.7

@@ -47,7 +47,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # The ZIP is always built; the DMG only when hdiutil cooperates.
+          artifacts=(dist/ClipVault-*.zip)
+          [ -e "${artifacts[0]}" ] || { echo "no ZIP in dist/" >&2; exit 1; }
+          for dmg in dist/ClipVault-*-universal.dmg; do
+            [ -e "$dmg" ] && artifacts+=("$dmg")
+          done
+          echo "Attaching: ${artifacts[*]}"
           gh release create "$GITHUB_REF_NAME" \
             --title "ClipVault ${GITHUB_REF_NAME#v}" \
             --notes-file RELEASE_NOTES.md \
-            dist/ClipVault-*.zip $(ls dist/ClipVault-*-universal.dmg 2>/dev/null || true)
+            "${artifacts[@]}"
