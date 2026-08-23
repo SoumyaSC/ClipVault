@@ -37,6 +37,19 @@ cv_commit() {
     git -C "$(cv_root)" rev-parse --short=9 HEAD 2>/dev/null || echo "unknown"
 }
 
+# owner/repo for changelog + release links. Derived from the origin remote once
+# the GitHub repo exists; until then the placeholder makes it obvious.
+cv_repo_slug() {
+    local url slug
+    url="$(git -C "$(cv_root)" remote get-url origin 2>/dev/null)" || { echo "OWNER/ClipVault"; return; }
+    slug="$(printf '%s' "$url" | sed -E 's#^(git@|ssh://git@|https://)github\.com[:/]##; s#\.git$##')"
+    if [[ "$slug" =~ ^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]]; then
+        printf '%s\n' "$slug"
+    else
+        echo "OWNER/ClipVault"   # not a GitHub remote — keep the placeholder visible
+    fi
+}
+
 cv_is_dirty() {
     [ -n "$(git -C "$(cv_root)" status --porcelain 2>/dev/null)" ]
 }
@@ -48,5 +61,6 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
     printf 'version      %s\n' "$v"
     printf 'build        %s\n' "$(cv_build_number)"
     printf 'commit       %s%s\n' "$(cv_commit)" "$(cv_is_dirty && echo ' (dirty)')"
+    printf 'repo         %s\n' "$(cv_repo_slug)"
     printf 'marketing    ClipVault %s (%s)\n' "$v" "$(cv_build_number)"
 fi

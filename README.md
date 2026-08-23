@@ -128,6 +128,11 @@ Inspect what the current checkout would stamp:
 - **MAJOR** — a breaking change to the on-disk format (`manifest.json` schema,
   payload layout) or to preference keys, i.e. anything a downgrade can't undo.
 
+Changelog compare/tag links are generated from the `origin` remote; until a
+GitHub remote exists they fall back to a visible `OWNER/ClipVault` placeholder
+(the two link lines at the bottom of `CHANGELOG.md` are worth a one-time fix
+after the repo is created).
+
 **Cutting a release**
 
 1. Describe the change under `## [Unreleased]` in `CHANGELOG.md` as you go.

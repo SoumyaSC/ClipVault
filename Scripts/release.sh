@@ -85,10 +85,10 @@ trap rollback ERR
 echo "$NEXT" > VERSION
 
 TODAY="$(date +%Y-%m-%d)"
-python3 - "$NEXT" "$TODAY" <<'PY'
+python3 - "$NEXT" "$TODAY" "$(cv_repo_slug)" <<'PY'
 import re, sys
 
-version, today = sys.argv[1], sys.argv[2]
+version, today, slug = sys.argv[1], sys.argv[2], sys.argv[3]
 lines = open('CHANGELOG.md').read().split('\n')
 
 # Everything between "## [Unreleased]" and the next "## " heading is this
@@ -105,9 +105,9 @@ released = ['## [Unreleased]', '', '_Nothing yet._', '', f'## [{version}] \u2014
 text = '\n'.join(lines[:start] + released + lines[end:])
 
 text = re.sub(r'^\[Unreleased\]: .*$',
-              f'[Unreleased]: https://github.com/OWNER/ClipVault/compare/v{version}...HEAD',
+              f'[Unreleased]: https://github.com/{slug}/compare/v{version}...HEAD',
               text, count=1, flags=re.M)
-text = text.rstrip('\n') + f'\n[{version}]: https://github.com/OWNER/ClipVault/releases/tag/v{version}\n'
+text = text.rstrip('\n') + f'\n[{version}]: https://github.com/{slug}/releases/tag/v{version}\n'
 open('CHANGELOG.md', 'w').write(text)
 PY
 
