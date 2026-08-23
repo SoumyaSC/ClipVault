@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # CFBundleVersion is the commit count, so the full history matters.
+          fetch-depth: 0
+
+      - name: Tag must match VERSION
+        run: |
+          file_version="$(tr -d '[:space:]' < VERSION)"
+          if [ "v$file_version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match VERSION ($file_version)" >&2
+            exit 1
+          fi
+
+      - name: Build
+        run: ./Scripts/build_app.sh
+
+      - name: Extract release notes from CHANGELOG
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          awk -v v="$version" '
+            $0 ~ "^## \\[" v "\\]" { flag = 1; next }
+            flag && /^## / { exit }
+            flag { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "No CHANGELOG section for $version" >&2
+            exit 1
+          fi
+          cat RELEASE_NOTES.md
+
+      # gh is preinstalled on GitHub runners — no third-party action needed.
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "ClipVault ${GITHUB_REF_NAME#v}" \
+            --notes-file RELEASE_NOTES.md \
+            dist/ClipVault-*.zip $(ls dist/ClipVault-*-universal.dmg 2>/dev/null || true)

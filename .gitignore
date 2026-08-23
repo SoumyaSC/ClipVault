@@ -1,0 +1,15 @@
+# Build products
+.build/
+.swiftpm/
+dist/
+# Icon build products — regenerated from Resources/brand by build_app.sh
+Resources/AppIcon.iconset/
+Resources/AppIcon.icns
+RELEASE_NOTES.md
+
+# Distribution archives are attached to GitHub Releases, never committed
+*.dmg
+*.zip
+
+# macOS
+.DS_Store

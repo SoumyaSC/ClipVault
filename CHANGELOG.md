@@ -1,0 +1,60 @@
+# Changelog
+
+All notable changes to ClipVault are recorded here.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+See [Versioning & releases](README.md#versioning--releases) for what each bump means
+and how a release is cut.
+
+## [Unreleased]
+
+_Nothing yet._
+
+## [1.0.7] — 2026-08-23
+
+### Fixed
+
+- **"Never expire automatically" no longer resets to 30 days on relaunch.** The
+  persisted image-retention value was validated against a list that omitted the
+  `0` the History tab offers, so the choice silently reverted at every launch and
+  images the user asked to keep were purged.
+- **Concealed images are now maskable.** The sensitivity flag from
+  `org.nspasteboard.ConcealedType` was resolved during routing but dropped before
+  the capture was finalised, so an image copied from a password manager was stored
+  unmarked and shown in the clear.
+- **Launch-at-login no longer clobbers the stored preference.** Running from
+  anywhere but `/Applications`, `SMAppService` reports `.notFound`; that was read
+  as "off", so opening Settings silently turned the preference off. Unknown states
+  are now left alone, and the sync runs after first render instead of during it.
+- **Clipboard settings are no longer read off the main thread.** The background
+  image finaliser resolved its policy from the main-actor settings store.
+- **Saves can no longer race each other.** An explicit `flush()` (on quit) could
+  overlap a debounced write through the same temp file; flushes are now serialised
+  on the IO queue, temp files are uniquely named, and strays are swept at launch.
+- **The Settings window no longer squeezes its own content.** It hardcoded a
+  content rect smaller than the SwiftUI content asked for, so the General tab
+  overflowed and grew a scrollbar. The window now sizes from the content, then
+  centres, and forces layout to settle before it is first composited.
+- Test runs no longer leave scratch `.plist` files behind in
+  `~/Library/Preferences` (settings persistence is now injectable).
+
+### Changed
+
+- Version identity is now derived from the `VERSION` file plus git:
+  `CFBundleVersion` is the commit count (monotonic) and the source commit is
+  stamped into the bundle and shown in Settings → Advanced → About.
+
+### Known issues
+
+- On macOS 26, Settings switches have been reported to render as knob-less pills
+  until another tab is visited. Not reproduced across 11 scenarios on a fresh
+  instance; the hardening above is the current mitigation, not a confirmed fix.
+
+## Earlier releases
+
+1.0.1 – 1.0.6 predate this changelog; see the git history and the archives in
+`dist/` for those builds.
+
+[Unreleased]: https://github.com/OWNER/ClipVault/compare/v1.0.7...HEAD
+[1.0.7]: https://github.com/OWNER/ClipVault/releases/tag/v1.0.7

@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build & test (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: swift --version
+
+      # The module boundary only exists in the SPM build — the shipping binary
+      # is compiled as a single module (see Scripts/build_app.sh), so this step
+      # is what catches cross-module regressions.
+      - name: SPM build
+        run: swift build
+
+      # Dependency-free harness (Command Line Tools ship no XCTest).
+      # Exercises NSPasteboard against scratch pasteboards, which needs a user
+      # session — fine on GitHub's macOS runners, not inside a plain container.
+      - name: Unit tests
+        run: swift run ClipVaultTests
+
+      - name: Version identity
+        run: ./Scripts/version.sh
+
+      - name: Release pipeline (universal build, bundle, codesign)
+        run: ./Scripts/build_app.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ClipVault-dev-build
+          path: dist/ClipVault-*.zip
+          if-no-files-found: error
+          retention-days: 7
