@@ -9,7 +9,15 @@ and how a release is cut.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Fixed
+
+- **Gatekeeper instructions were wrong for current macOS.** The README told users
+  to Control-click → Open, a bypass [Apple removed in macOS 15
+  Sequoia](https://developer.apple.com/news/?id=saqachfa). Every user on Sequoia
+  or later — which is everyone on macOS 26 — would have followed a dead end. The
+  README now documents the System Settings → Privacy & Security → Open Anyway
+  route, `xattr -dr`, and `brew install --no-quarantine`, and says plainly that
+  the prompt only disappears with a Developer ID and notarisation.
 
 ## [1.1.1] — 2026-08-25
 

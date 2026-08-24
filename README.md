@@ -44,21 +44,51 @@ brew install --cask soumyasc/tap/clipvault
 Upgrade later with `brew upgrade --cask clipvault`.
 
 ClipVault is ad-hoc signed rather than notarised, and Homebrew quarantines cask
-downloads by default, so macOS may refuse the first launch. Either open it once
-with **right-click → Open → Open**, or install without the quarantine flag:
+downloads by default, so **macOS will refuse the first launch**. The painless
+way round it is to skip the quarantine flag at install time:
 
 ```sh
 brew install --cask --no-quarantine soumyasc/tap/clipvault
 ```
 
+Already installed the normal way? Either clear the flag —
+`xattr -dr com.apple.quarantine /Applications/ClipVault.app` — or approve it
+once in **System Settings → Privacy & Security → Open Anyway** (see
+[First launch](#first-launch) below).
+
 ### Direct download
 
 1. Grab the newest `ClipVault-<version>.zip` from [Releases](https://github.com/SoumyaSC/ClipVault/releases/latest)
 2. Unzip and drag **ClipVault** into **Applications**
-3. **First launch:** right-click the app → **Open** → **Open**. ClipVault is
-   ad-hoc signed rather than notarised, so Gatekeeper blocks a plain
-   double-click on a downloaded copy. Once is enough. (From the terminal:
-   `xattr -dr com.apple.quarantine /Applications/ClipVault.app`)
+3. Approve it once — see [First launch](#first-launch)
+
+### First launch
+
+ClipVault is **ad-hoc signed, not notarised**: there is no Apple Developer ID
+behind it, so Gatekeeper blocks the first launch of any copy that arrives with
+the download quarantine flag. This is expected, and it is a one-time step.
+
+On **macOS 15 Sequoia and later** (including macOS 26), Control-click → Open no
+longer bypasses this — [Apple removed that shortcut](https://developer.apple.com/news/?id=saqachfa).
+Do this instead:
+
+1. Double-click ClipVault. macOS says it can't be opened — dismiss the dialog.
+2. Open **System Settings → Privacy & Security**, scroll to Security, and click
+   **Open Anyway** next to the ClipVault message. The button only appears for
+   about an hour after the blocked launch.
+3. Enter your password. ClipVault is now a permanent exception; it never asks again.
+
+Prefer the terminal, or want to skip the dance entirely?
+
+```sh
+xattr -dr com.apple.quarantine /Applications/ClipVault.app
+```
+
+On **macOS 14 Sonoma and earlier**, the old Control-click → **Open** → **Open**
+route still works.
+
+> Want none of this? It needs a paid Apple Developer ID and notarisation, which
+> this project doesn't have. If that changes, the prompt disappears for everyone.
 
 Then copy anything — it's already in your history. Press **⌘⇧V** anywhere to see it.
 
@@ -231,9 +261,9 @@ without `--publish` and the workflow creates the release by itself.
 `.github/workflows/ci.yml` runs the SPM build, the test suite, and the full
 release pipeline on every push and pull request.
 
-> Not yet in place: a Developer ID signature and notarisation. Until then,
-> downloaded builds need the one-time right-click → Open described in
-> [Install](#install).
+> Not yet in place: a Developer ID signature and notarisation. Until then every
+> downloaded copy needs the one-time approval described in
+> [First launch](#first-launch).
 
 ## Building from source
 
