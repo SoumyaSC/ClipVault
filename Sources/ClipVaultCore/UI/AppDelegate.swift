@@ -45,6 +45,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
         context.monitor.start()
         context.store.purgeExpiredImages()
+        UpdateChecker.shared.start(settings: context.settings)
         if context.settings.hotKeyEnabled {
             context.hotKey.registerDefault { [weak self] in
                 self?.togglePopover()
@@ -55,6 +56,24 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             MainActor.assumeIsolated {
                 _ = self?.context.store.purgeExpiredImages()
             }
+        }
+
+        // Render the README screenshots and quit. See Scripts/make_screenshots.sh.
+        if let renderDir = ProcessInfo.processInfo.environment["CV_RENDER_DIR"], !renderDir.isEmpty {
+            ScreenshotRenderer.renderAll(into: URL(fileURLWithPath: renderDir, isDirectory: true))
+            NSApp.terminate(nil)
+            return
+        }
+
+        // Screenshot/QA affordance: open a surface at launch without a human
+        // clicking the status item. See Scripts/make_screenshots.sh.
+        switch ProcessInfo.processInfo.environment["CV_OPEN_AT_LAUNCH"] {
+        case "settings":
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.openSettings() }
+        case "panel":
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.showPopover() }
+        default:
+            break
         }
 
         // First run: surface the panel automatically so the app is never invisible.
@@ -115,6 +134,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                                     action: #selector(quickPasteLast), keyEquivalent: "")
         quickPaste.target = self
         menu.addItem(quickPaste)
+
+        if case .available(let release) = UpdateChecker.shared.state {
+            menu.addItem(.separator())
+            let update = NSMenuItem(title: "Update to \(release.version)…",
+                                    action: #selector(openUpdatePage), keyEquivalent: "")
+            update.target = self
+            menu.addItem(update)
+        }
 
         menu.addItem(.separator())
 
@@ -219,6 +246,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func quickPasteLast() {
         guard let last = context.store.items.first else { return }
         context.performQuickPaste(last)
+    }
+
+    @objc private func openUpdatePage() {
+        guard case .available(let release) = UpdateChecker.shared.state else { return }
+        NSWorkspace.shared.open(release.page)
     }
 
     @objc private func openSettings() {

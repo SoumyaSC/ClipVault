@@ -1,28 +1,80 @@
+<div align="center">
+
+<img src="Resources/brand/icon_256x256.png" width="128" alt="ClipVault">
+
 # ClipVault
 
-A native macOS menu-bar clipboard manager. Every piece of text, every image, every file you copy — captured silently, searchable instantly, pasteable anywhere.
+**A native macOS menu-bar clipboard manager.** Every piece of text and every image
+you copy — captured silently, searchable instantly, pasteable anywhere.
 
-**Universal binary · macOS 13 Ventura+ · Intel & Apple Silicon · zero third-party dependencies**
+[![Release](https://img.shields.io/github/v/release/SoumyaSC/ClipVault?color=6B5CF2&label=release)](https://github.com/SoumyaSC/ClipVault/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/SoumyaSC/ClipVault/total?color=6B5CF2)](https://github.com/SoumyaSC/ClipVault/releases)
+![macOS 13+](https://img.shields.io/badge/macOS-13%20Ventura%2B-6B5CF2)
+![Universal](https://img.shields.io/badge/binary-universal-6B5CF2)
+![Dependencies](https://img.shields.io/badge/dependencies-none-6B5CF2)
 
-![ClipVault](Resources/brand/AppIcon-master-1024.png)
+</div>
 
----
+## Screenshots
+
+<div align="center">
+
+<img src="docs/screenshots/panel-dark.png" width="360" alt="The ClipVault panel listing recent clipboard items, newest first, with a thumbnail for a copied image">
+
+<em>⌘⇧V from anywhere. Click an item to copy it back.</em>
+
+<br><br>
+
+<img src="docs/screenshots/panel-search-dark.png" width="330" alt="The panel filtered live as a search query is typed">
+&nbsp;&nbsp;
+<img src="docs/screenshots/panel-light.png" width="330" alt="The same panel in light appearance">
+
+<em>Search is focused the moment the panel opens · light and dark, automatically</em>
+
+</div>
 
 ## Install
 
-1. Download the newest `ClipVault-<version>.zip` (or `.dmg`) from [Releases](../../releases)
-2. Drag **ClipVault** into **Applications**
-3. **First launch:** right-click the app → **Open** → **Open**. ClipVault is
-   ad-hoc signed, not notarised, so Gatekeeper blocks a plain double-click on a
-   downloaded copy. You only do this once. (Equivalent from the terminal:
-   `xattr -dr com.apple.quarantine /Applications/ClipVault.app`)
-4. A clipboard icon appears in your menu bar. Copy anything — it's already in your history.
+### Homebrew (recommended)
 
-> First launch tip: press **⌘⇧V** anywhere to open the panel.
->
-> Keep exactly one copy installed, in `/Applications`. Running from elsewhere is
-> fine day to day, but macOS only reports a trustworthy launch-at-login state for
-> an app it can register from a standard location.
+```sh
+brew install --cask soumyasc/tap/clipvault
+```
+
+Brew-installed apps aren't quarantine-flagged, so Gatekeeper never prompts.
+Upgrade later with `brew upgrade --cask clipvault`.
+
+### Direct download
+
+1. Grab the newest `ClipVault-<version>.zip` from [Releases](https://github.com/SoumyaSC/ClipVault/releases/latest)
+2. Unzip and drag **ClipVault** into **Applications**
+3. **First launch:** right-click the app → **Open** → **Open**. ClipVault is
+   ad-hoc signed rather than notarised, so Gatekeeper blocks a plain
+   double-click on a downloaded copy. Once is enough. (From the terminal:
+   `xattr -dr com.apple.quarantine /Applications/ClipVault.app`)
+
+Then copy anything — it's already in your history. Press **⌘⇧V** anywhere to see it.
+
+> Keep exactly one copy installed, in `/Applications`. Running from elsewhere
+> works day to day, but macOS only reports a trustworthy launch-at-login state
+> for an app it can register from a standard location.
+
+## Updates
+
+ClipVault asks GitHub once a day whether a newer release exists and, if so, says
+so in **Settings → Advanced** and in the menu-bar right-click menu. It never
+installs anything behind your back:
+
+```sh
+brew upgrade --cask clipvault     # or download the new release
+```
+
+Turn the check off with **Settings → Advanced → Check for updates
+automatically**; nothing else in the app touches the network.
+
+> Why not Sparkle-style silent self-update: ClipVault is ad-hoc signed, which
+> breaks the code-signature continuity a self-updater relies on to know it is
+> installing the same app. Homebrew already does upgrades properly.
 
 ## The 15-second tour
 
@@ -85,7 +137,12 @@ Everything stays on your machine:
 └── data/              # payloads: <uuid>.txt / .png / .thumb.png / .html / .rtf / .files
 ```
 
-No network access. No analytics. No accounts. Delete the folder = history gone.
+No analytics. No accounts. No telemetry. Deleting that folder deletes your history.
+
+The **one** network request ClipVault makes is the daily update check: an
+unauthenticated `GET https://api.github.com/repos/SoumyaSC/ClipVault/releases/latest`,
+which sends nothing but the request itself and can be switched off in Settings →
+Advanced. Clipboard contents never leave your Mac.
 
 ## Permissions (only if you want Quick Paste)
 
@@ -100,7 +157,7 @@ ClipVault uses Accessibility **only** to synthesise a ⌘V keystroke. It never r
 - **General** — Launch at login · Dock icon · ⌘⇧V hotkey on/off · close-panel-after-copy · haptic feedback (ClipVault is silent by design)
 - **History** — item cap · image retention · storage usage · purge now · open data folder
 - **Security** — concealed-copy guard · sensitive masking · OTP filter · ignored-apps editor
-- **Advanced** — Accessibility status · re-show welcome banner · version info
+- **Advanced** — Accessibility status · update check + toggle · re-show welcome banner · version, build and source commit
 
 ## Versioning & releases
 
@@ -200,4 +257,12 @@ Key invariants enforced by tests: pinned items sort above chronological; caps ev
 
 ## Uninstall
 
-Quit ClipVault (menu-bar icon → Quit), remove it from Applications, and delete `~/Library/Application Support/ClipVault` if you want the history gone too. Remove it from System Settings → General → Login Items if enabled.
+```sh
+brew uninstall --cask clipvault          # also removes the app
+brew uninstall --zap --cask clipvault    # …and the history + preferences
+```
+
+By hand: quit ClipVault (menu-bar icon → Quit), delete it from `/Applications`,
+then remove `~/Library/Application Support/ClipVault` (history) and
+`~/Library/Preferences/app.clipvault.ClipVault.plist` (settings). If launch-at-login
+was on, drop it from System Settings → General → Login Items.

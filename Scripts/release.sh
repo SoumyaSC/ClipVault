@@ -6,6 +6,7 @@
 #   ./Scripts/release.sh major          1.0.7 → 2.0.0
 #   ./Scripts/release.sh 1.2.3          explicit version
 #   ./Scripts/release.sh patch --dry-run   print the plan, change nothing
+#   ./Scripts/release.sh patch --publish   …then push, publish, refresh the tap
 #
 # What it does, in order — it stops at the first failure and, once it has
 # started writing, rolls the working tree back:
@@ -17,7 +18,8 @@
 #      the commit, so the build number matches what CI stamps from the tag
 #   5. creates an annotated tag on the verified commit
 #
-# Pushing and publishing stay manual — the script prints the exact commands.
+# Pushing and publishing only happen with --publish. Without it the script
+# stops after the local tag and prints the exact commands.
 
 set -euo pipefail
 
@@ -29,8 +31,21 @@ die() { echo "✗ $*" >&2; exit 1; }
 
 BUMP="${1:-}"
 DRY_RUN=false
-[ "${2:-}" = "--dry-run" ] && DRY_RUN=true
-[ -n "$BUMP" ] || die "usage: $0 <patch|minor|major|X.Y.Z> [--dry-run]"
+PUBLISH=false
+shift || true
+for flag in "$@"; do
+    case "$flag" in
+        --dry-run) DRY_RUN=true ;;
+        --publish) PUBLISH=true ;;
+        *) die "unknown flag: $flag" ;;
+    esac
+done
+[ -n "$BUMP" ] || die "usage: $0 <patch|minor|major|X.Y.Z> [--dry-run] [--publish]"
+$DRY_RUN && $PUBLISH && die "--dry-run and --publish are mutually exclusive"
+if $PUBLISH; then
+    command -v gh >/dev/null || die "--publish needs the GitHub CLI (gh)"
+    gh auth status >/dev/null 2>&1 || die "--publish needs 'gh auth login'"
+fi
 
 CURRENT="$(cv_version)"
 cv_validate_semver "$CURRENT"
@@ -124,12 +139,98 @@ git tag -a "v$NEXT" -m "ClipVault $NEXT"
 trap - ERR
 
 echo ""
-ARTIFACTS="$(ls dist/ClipVault-"$NEXT"*.zip dist/ClipVault-"$NEXT"*.dmg 2>/dev/null | tr '\n' ' ')"
-echo "✔ Released v$NEXT locally. Artifacts: $ARTIFACTS"
-echo "  To publish:"
-echo "    git push origin HEAD --follow-tags"
-echo "    gh release create v$NEXT $ARTIFACTS \\"
-echo "        --title \"ClipVault $NEXT\" --notes-from-tag"
+ARTIFACTS=()
+while IFS= read -r file; do ARTIFACTS+=("$file"); done < <(ls dist/ClipVault-"$NEXT"*.zip dist/ClipVault-"$NEXT"*.dmg 2>/dev/null)
+[ ${#ARTIFACTS[@]} -gt 0 ] || die "the build produced no artifacts in dist/"
+
 echo ""
-echo "  (pushing the tag also triggers .github/workflows/release.yml, which builds"
-echo "   and attaches the artifacts on its own — publish by hand only if CI is off.)"
+echo "✔ Released v$NEXT locally. Artifacts: ${ARTIFACTS[*]}"
+
+if ! $PUBLISH; then
+    echo "  To publish:"
+    echo "    ./Scripts/release.sh $BUMP --publish   (next time)"
+    echo "  or by hand:"
+    echo "    git push origin HEAD --follow-tags"
+    echo "    gh release create v$NEXT ${ARTIFACTS[*]} --title \"ClipVault $NEXT\" --notes-from-tag"
+    exit 0
+fi
+
+# --- Publish ---------------------------------------------------------------
+
+echo "▶︎ Pushing $NEXT"
+git push -q origin HEAD --follow-tags
+
+NOTES="$(mktemp)"
+awk -v v="$NEXT" '
+    $0 ~ "^## \\[" v "\\]" { flag = 1; next }
+    flag && /^## / { exit }
+    flag { print }
+' CHANGELOG.md > "$NOTES"
+[ -s "$NOTES" ] || die "no CHANGELOG section for $NEXT"
+
+echo "▶︎ Publishing the GitHub release"
+if gh release view "v$NEXT" >/dev/null 2>&1; then
+    gh release upload "v$NEXT" "${ARTIFACTS[@]}" --clobber
+else
+    gh release create "v$NEXT" "${ARTIFACTS[@]}" \
+        --title "ClipVault $NEXT" \
+        --notes-file "$NOTES"
+fi
+rm -f "$NOTES"
+
+# --- Homebrew tap ----------------------------------------------------------
+#
+# The checksum comes from the asset GitHub is actually serving, not from the
+# local build: if an upload were ever truncated or replaced, a locally computed
+# sha256 would happily certify the wrong bytes.
+
+TAP_REPO="${TAP_REPO:-SoumyaSC/homebrew-tap}"
+echo "▶︎ Refreshing the cask in $TAP_REPO"
+DOWNLOAD_DIR="$(mktemp -d)"
+if ! gh release download "v$NEXT" --repo "$(cv_repo_slug)" \
+        --pattern "ClipVault-$NEXT.zip" --dir "$DOWNLOAD_DIR" >/dev/null 2>&1; then
+    echo "  ✗ could not download the published zip — update the cask by hand" >&2
+    rm -rf "$DOWNLOAD_DIR"
+    exit 1
+fi
+SHA256="$(shasum -a 256 "$DOWNLOAD_DIR/ClipVault-$NEXT.zip" | awk '{print $1}')"
+rm -rf "$DOWNLOAD_DIR"
+
+TAP_DIR="$(mktemp -d)"
+if gh repo clone "$TAP_REPO" "$TAP_DIR" -- --depth 1 -q 2>/dev/null; then
+    mkdir -p "$TAP_DIR/Casks"
+    cat > "$TAP_DIR/Casks/clipvault.rb" <<CASK
+cask "clipvault" do
+  version "$NEXT"
+  sha256 "$SHA256"
+
+  url "https://github.com/$(cv_repo_slug)/releases/download/v#{version}/ClipVault-#{version}.zip"
+  name "ClipVault"
+  desc "Menu bar clipboard manager for text and images"
+  homepage "https://github.com/$(cv_repo_slug)"
+
+  depends_on macos: ">= :ventura"
+
+  app "ClipVault.app"
+
+  zap trash: [
+    "~/Library/Application Support/ClipVault",
+    "~/Library/Preferences/app.clipvault.ClipVault.plist",
+  ]
+end
+CASK
+    git -C "$TAP_DIR" add -A
+    if git -C "$TAP_DIR" commit -q -m "clipvault $NEXT"; then
+        git -C "$TAP_DIR" push -q origin HEAD:main && echo "  ✓ cask updated to $NEXT"
+    else
+        echo "  · tap already at $NEXT"
+    fi
+    rm -rf "$TAP_DIR"
+else
+    echo "  ✗ could not clone $TAP_REPO — update the cask by hand" >&2
+fi
+
+echo ""
+echo "✔ ClipVault $NEXT is published."
+echo "    https://github.com/$(cv_repo_slug)/releases/tag/v$NEXT"
+echo "    brew install --cask soumyasc/tap/clipvault"

@@ -39,6 +39,34 @@ func runClipStoreTests() -> Int {
     return count
 }
 
+// MARK: - UpdateCheckerTests
+
+@discardableResult
+func runUpdateCheckerTests() -> Int {
+    print("\nUpdateCheckerTests")
+    var count = 0
+    func run(_ name: String, _ body: (UpdateCheckerTests) -> Void) {
+        let suite = UpdateCheckerTests()
+        runTest(name) { body(suite) }
+        count += 1
+    }
+
+    run("testNewerVersionsAreDetected") { $0.testNewerVersionsAreDetected() }
+    run("testNumericComponentsCompareAsNumbersNotStrings") { $0.testNumericComponentsCompareAsNumbersNotStrings() }
+    run("testSameVersionIsNotAnUpdate") { $0.testSameVersionIsNotAnUpdate() }
+    run("testLeadingVAndShortFormsAreTolerated") { $0.testLeadingVAndShortFormsAreTolerated() }
+    run("testPrereleasesNeverNagStableUsers") { $0.testPrereleasesNeverNagStableUsers() }
+    run("testNewerReleaseSurfacesAsAvailable") { $0.testNewerReleaseSurfacesAsAvailable() }
+    run("testSameReleaseReportsUpToDate") { $0.testSameReleaseReportsUpToDate() }
+    run("testDraftsAndPrereleasesAreIgnored") { $0.testDraftsAndPrereleasesAreIgnored() }
+    run("testNoReleasesYetIsNotAnError") { $0.testNoReleasesYetIsNotAnError() }
+    run("testRateLimitOrOutageReportsFailure") { $0.testRateLimitOrOutageReportsFailure() }
+    run("testNetworkErrorReportsFailure") { $0.testNetworkErrorReportsFailure() }
+    run("testGarbageBodyReportsFailure") { $0.testGarbageBodyReportsFailure() }
+
+    return count
+}
+
 // MARK: - ClipboardClassifierTests
 
 @discardableResult
@@ -86,7 +114,7 @@ func runClipboardClassifierTests() -> Int {
 
 // MARK: - Entry
 
-let totalSuites = runClipStoreTests() + runClipboardClassifierTests()
+let totalSuites = runClipStoreTests() + runClipboardClassifierTests() + runUpdateCheckerTests()
 
 print("")
 print("─────────────────────────────────────")

@@ -24,7 +24,18 @@ extension UserDefaults: SettingsDefaults {}
 /// Views observe this object; services read it directly on the main thread.
 @MainActor
 final class SettingsStore: ObservableObject {
-    static let shared = SettingsStore()
+    static let shared = SettingsStore(defaults: SettingsStore.defaultBackingStore())
+
+    /// `UserDefaults.standard`, unless `CV_DEFAULTS_SUITE` names a scratch
+    /// suite — the settings counterpart to `CV_DATA_DIR`; see ClipStore.
+    static func defaultBackingStore() -> SettingsDefaults {
+        if let suite = ProcessInfo.processInfo.environment["CV_DEFAULTS_SUITE"],
+           !suite.isEmpty,
+           let scratch = UserDefaults(suiteName: suite) {
+            return scratch
+        }
+        return UserDefaults.standard
+    }
 
     private let defaults: SettingsDefaults
 
@@ -41,6 +52,7 @@ final class SettingsStore: ObservableObject {
         static let welcomeShown       = "cv.welcomeShown"
         static let autoCloseOnCopy    = "cv.autoCloseOnCopy"
         static let dockIconEnabled    = "cv.dockIconEnabled"
+        static let checkForUpdates    = "cv.checkForUpdates"
     }
 
     /// Single source of truth for the image-retention choices: the History tab
@@ -110,6 +122,11 @@ final class SettingsStore: ObservableObject {
     @Published var dockIconEnabled: Bool {
         didSet { defaults.set(dockIconEnabled, forKey: Key.dockIconEnabled) }
     }
+    /// Ask GitHub once a day whether a newer release exists. The only network
+    /// request ClipVault makes; see UpdateChecker.
+    @Published var checkForUpdates: Bool {
+        didSet { defaults.set(checkForUpdates, forKey: Key.checkForUpdates) }
+    }
 
     init(defaults: SettingsDefaults = UserDefaults.standard) {
         self.defaults = defaults
@@ -125,6 +142,7 @@ final class SettingsStore: ObservableObject {
         welcomeShown       = defaults.bool(forKey: Key.welcomeShown)
         autoCloseOnCopy    = defaults.object(forKey: Key.autoCloseOnCopy) as? Bool ?? true
         dockIconEnabled    = defaults.bool(forKey: Key.dockIconEnabled)
+        checkForUpdates    = defaults.object(forKey: Key.checkForUpdates) as? Bool ?? true
 
         maxItems           = min(max(maxItems, 50), 1000)
         // 0 means "never expire automatically" and is a real choice in the

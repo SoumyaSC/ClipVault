@@ -2,16 +2,31 @@ import SwiftUI
 import AppKit
 
 struct SettingsView: View {
+
+    enum Tab: String, CaseIterable {
+        case general, history, security, advanced
+    }
+
+    @State private var selection: Tab
+
+    init(initialTab: Tab = .general) {
+        _selection = State(initialValue: initialTab)
+    }
+
     var body: some View {
-        TabView {
+        TabView(selection: $selection) {
             GeneralSettingsTab()
                 .tabItem { Label("General", systemImage: "switch.2") }
+                .tag(Tab.general)
             HistorySettingsTab()
                 .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
+                .tag(Tab.history)
             SecuritySettingsTab()
                 .tabItem { Label("Security", systemImage: "hand.raised") }
+                .tag(Tab.security)
             AdvancedSettingsTab()
                 .tabItem { Label("Advanced", systemImage: "slider.horizontal.3") }
+                .tag(Tab.advanced)
         }
         .frame(width: 560, height: 500)
         .padding(4)
@@ -20,7 +35,7 @@ struct SettingsView: View {
 
 // MARK: - General
 
-private struct GeneralSettingsTab: View {
+struct GeneralSettingsTab: View {
     @ObservedObject private var settings = AppContext.shared.settings
 
     var body: some View {
@@ -58,7 +73,7 @@ private struct GeneralSettingsTab: View {
 
 // MARK: - History
 
-private struct HistorySettingsTab: View {
+struct HistorySettingsTab: View {
     @ObservedObject private var settings = AppContext.shared.settings
     @State private var storageUsed = "…"
     @State private var lastPurgeNote: String?
@@ -130,7 +145,7 @@ private struct HistorySettingsTab: View {
 
 // MARK: - Security
 
-private struct SecuritySettingsTab: View {
+struct SecuritySettingsTab: View {
     @ObservedObject private var settings = AppContext.shared.settings
     @State private var newBundleID = ""
 
@@ -193,8 +208,9 @@ private struct SecuritySettingsTab: View {
 
 // MARK: - Advanced
 
-private struct AdvancedSettingsTab: View {
+struct AdvancedSettingsTab: View {
     @ObservedObject private var settings = AppContext.shared.settings
+    @ObservedObject private var updater = UpdateChecker.shared
     @State private var accessibilityGranted = QuickPaster.isTrusted
 
     var body: some View {
@@ -224,6 +240,22 @@ private struct AdvancedSettingsTab: View {
                 }
             }
 
+            Section("Updates") {
+                HStack(spacing: 8) {
+                    updateStatusLine
+                    Spacer()
+                    if case .available(let release) = updater.state {
+                        Button("What's New") { NSWorkspace.shared.open(release.page) }
+                    }
+                    Button("Check Now") { updater.check() }
+                        .disabled(updater.state == .checking || updater.state == .unsupported)
+                }
+                Toggle("Check for updates automatically", isOn: $settings.checkForUpdates)
+                Text("A once-a-day request to api.github.com asking for the latest release number — the only network call ClipVault makes. Install updates with `brew upgrade --cask clipvault`, or from the release page.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Reset") {
                 Button("Show Welcome Banner Again") {
                     settings.welcomeShown = false
@@ -241,6 +273,36 @@ private struct AdvancedSettingsTab: View {
 
     /// Marketing version, monotonic build number, and the source commit when the
     /// build came from a git checkout — the three things a bug report needs.
+    @ViewBuilder
+    private var updateStatusLine: some View {
+        switch updater.state {
+        case .idle:
+            Text("Not checked yet").foregroundStyle(.secondary)
+        case .checking:
+            Text("Checking…").foregroundStyle(.secondary)
+        case .upToDate:
+            HStack(spacing: 6) {
+                Circle().fill(Color.green).frame(width: 9, height: 9)
+                Text("ClipVault \(updater.currentVersion) is the latest release")
+            }
+        case .available(let release):
+            HStack(spacing: 6) {
+                Circle().fill(Color.cvAccent).frame(width: 9, height: 9)
+                Text("Version \(release.version) is available")
+                    .font(.system(size: 12, weight: .medium))
+            }
+        case .failed(let reason):
+            HStack(spacing: 6) {
+                Circle().fill(Color.orange).frame(width: 9, height: 9)
+                Text("Couldn't check: \(reason)")
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+        case .unsupported:
+            Text("Update checks are off in local builds").foregroundStyle(.secondary)
+        }
+    }
+
     private var appVersion: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"

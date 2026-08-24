@@ -52,10 +52,16 @@ final class ClipStore: ObservableObject {
     private let saveLock = NSLock()
     private var debounceWork: DispatchWorkItem?
 
+    /// `~/Library/Application Support/ClipVault`, unless `CV_DATA_DIR` points
+    /// somewhere else. That override exists for `Scripts/make_screenshots.sh`
+    /// and manual QA: it lets a throwaway instance run against a scratch history
+    /// without ever touching the real one. Unset in every normal launch.
     static func defaultDirectory() -> URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        if let override = ProcessInfo.processInfo.environment["CV_DATA_DIR"], !override.isEmpty {
+            return URL(fileURLWithPath: (override as NSString).expandingTildeInPath, isDirectory: true)
+        }
+        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
             .appendingPathComponent("ClipVault", isDirectory: true)
-        return base
     }
 
     init(directory: URL = ClipStore.defaultDirectory(), configProvider: @escaping () -> HistoryConfig) {

@@ -17,9 +17,10 @@ VERSION="$(cv_version)"
 cv_validate_semver "$VERSION"
 BUILD_NUMBER="$(cv_build_number)"
 SOURCE_COMMIT="$(cv_commit)"
+UPDATE_REPO="$(cv_repo_slug)"
 BUNDLE_ID="app.clipvault.ClipVault"
 
-echo "▶︎ Building ClipVault $VERSION (build $BUILD_NUMBER, commit $SOURCE_COMMIT)"
+echo "▶︎ Building ClipVault $VERSION (build $BUILD_NUMBER, commit $SOURCE_COMMIT, updates from $UPDATE_REPO)"
 
 APP_NAME="ClipVault"
 STAGE="$ROOT/dist/stage"
@@ -92,6 +93,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <string>$BUILD_NUMBER</string>
     <key>CVSourceCommit</key>
     <string>$SOURCE_COMMIT</string>
+    <key>CVUpdateRepository</key>
+    <string>$UPDATE_REPO</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>LSApplicationCategoryType</key>
