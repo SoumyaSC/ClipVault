@@ -42,19 +42,39 @@ jobs:
           fi
           cat RELEASE_NOTES.md
 
-      # gh is preinstalled on GitHub runners — no third-party action needed.
-      - name: Publish GitHub release
+      # Complements `Scripts/release.sh --publish` rather than competing with
+      # it. When the release already exists, existing assets are left ALONE:
+      # the Homebrew cask's sha256 is computed from the published zip, and
+      # re-uploading a rebuilt one (different timestamps, different checksum)
+      # would silently break `brew install`. CI's real contribution here is the
+      # DMG, which a wedged local diskimages-helper often cannot produce.
+      - name: Publish or complete the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # The ZIP is always built; the DMG only when hdiutil cooperates.
           artifacts=(dist/ClipVault-*.zip)
           [ -e "${artifacts[0]}" ] || { echo "no ZIP in dist/" >&2; exit 1; }
           for dmg in dist/ClipVault-*-universal.dmg; do
             [ -e "$dmg" ] && artifacts+=("$dmg")
           done
-          echo "Attaching: ${artifacts[*]}"
-          gh release create "$GITHUB_REF_NAME" \
-            --title "ClipVault ${GITHUB_REF_NAME#v}" \
-            --notes-file RELEASE_NOTES.md \
-            "${artifacts[@]}"
+
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Creating release with: ${artifacts[*]}"
+            gh release create "$GITHUB_REF_NAME" \
+              --title "ClipVault ${GITHUB_REF_NAME#v}" \
+              --notes-file RELEASE_NOTES.md \
+              "${artifacts[@]}"
+            exit 0
+          fi
+
+          echo "Release $GITHUB_REF_NAME already exists — adding only what is missing."
+          existing="$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name')"
+          for artifact in "${artifacts[@]}"; do
+            name="$(basename "$artifact")"
+            if grep -qxF "$name" <<< "$existing"; then
+              echo "  · $name already attached, leaving it untouched"
+            else
+              echo "  + attaching $name"
+              gh release upload "$GITHUB_REF_NAME" "$artifact"
+            fi
+          done
