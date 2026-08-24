@@ -9,6 +9,10 @@ and how a release is cut.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [1.1.0] — 2026-08-25
+
 ### Added
 
 - **Update checks.** ClipVault asks GitHub once a day whether a newer release
@@ -84,4 +88,5 @@ public release is 1.1.0._
 before the project was put under version control, so there is no commit, tag, or
 published archive for them.
 
-[Unreleased]: https://github.com/SoumyaSC/ClipVault/compare/v1.0.7...HEAD
+[Unreleased]: https://github.com/SoumyaSC/ClipVault/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/SoumyaSC/ClipVault/releases/tag/v1.1.0
