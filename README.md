@@ -206,15 +206,27 @@ with no GitHub remote (a fork, a tarball) falls back to a visible
 ./Scripts/release.sh patch --dry-run
 ```
 
-3. Drop `--dry-run` to write `VERSION`, promote the changelog section, run the
-   full build, commit `Release vX.Y.Z`, and create an annotated tag.
-4. Push. The tag triggers `.github/workflows/release.yml`, which rebuilds from a
-   clean checkout, verifies the tag matches `VERSION`, and publishes the archives
-   with the changelog section as release notes:
+3. Drop `--dry-run` and add `--publish` to do the whole thing:
 
 ```bash
-git push origin HEAD --follow-tags
+./Scripts/release.sh patch --publish
 ```
+
+   That writes `VERSION`, promotes the changelog section, commits
+   `Release vX.Y.Z`, builds, tags, pushes, creates the GitHub release with the
+   changelog section as its notes, and refreshes
+   [the Homebrew cask](https://github.com/SoumyaSC/homebrew-tap) — with the
+   `sha256` taken from the asset GitHub actually serves, not the local build.
+
+   Without `--publish` it stops after the local tag and prints the manual
+   commands, so you can inspect everything first.
+
+Pushing the tag also starts `.github/workflows/release.yml`. It rebuilds from a
+clean checkout, verifies the tag matches `VERSION`, and then **fills gaps only**:
+assets that are already attached are left untouched (re-uploading a rebuilt zip
+would change its checksum and break the cask), so in practice its contribution is
+the `.dmg` that a wedged local `diskimages-helper` can't produce. Push a tag
+without `--publish` and the workflow creates the release by itself.
 
 `.github/workflows/ci.yml` runs the SPM build, the test suite, and the full
 release pipeline on every push and pull request.
