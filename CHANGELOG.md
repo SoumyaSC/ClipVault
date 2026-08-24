@@ -9,6 +9,10 @@ and how a release is cut.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [1.1.1] — 2026-08-25
+
 ### Fixed
 
 - **The release workflow no longer fights `release.sh --publish`.** Both tried to
@@ -106,5 +110,6 @@ public release is 1.1.0._
 before the project was put under version control, so there is no commit, tag, or
 published archive for them.
 
-[Unreleased]: https://github.com/SoumyaSC/ClipVault/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/SoumyaSC/ClipVault/compare/v1.1.1...HEAD
 [1.1.0]: https://github.com/SoumyaSC/ClipVault/releases/tag/v1.1.0
+[1.1.1]: https://github.com/SoumyaSC/ClipVault/releases/tag/v1.1.1
