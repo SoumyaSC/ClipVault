@@ -37,6 +37,9 @@ and how a release is cut.
 
 ## [1.0.7] — 2026-08-23
 
+_Built and installed locally; never published as a GitHub release. The first
+public release is 1.1.0._
+
 ### Fixed
 
 - **"Never expire automatically" no longer resets to 30 days on relaunch.** The
@@ -82,4 +85,3 @@ before the project was put under version control, so there is no commit, tag, or
 published archive for them.
 
 [Unreleased]: https://github.com/SoumyaSC/ClipVault/compare/v1.0.7...HEAD
-[1.0.7]: https://github.com/SoumyaSC/ClipVault/releases/tag/v1.0.7
