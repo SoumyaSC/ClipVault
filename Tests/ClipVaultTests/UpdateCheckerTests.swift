@@ -106,3 +106,40 @@ final class UpdateCheckerTests: XCTestCase {
         guard case .failed = state else { return XCTFail("expected .failed, got \(state)") }
     }
 }
+
+// MARK: - Against GitHub's real payload
+
+extension UpdateCheckerTests {
+
+    /// Captured from api.github.com for the v1.1.0 release. Guards the decoder
+    /// against the live response shape — a checker that silently stops working
+    /// because a field was renamed is worse than no checker.
+    private func liveFixture() -> Data? {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("Fixtures/github-release-latest.json")
+        return try? Data(contentsOf: url)
+    }
+
+    func testRealGitHubPayloadIsUnderstood() {
+        guard let data = liveFixture() else {
+            return XCTFail("fixture missing — re-run curl into Tests/ClipVaultTests/Fixtures/")
+        }
+        let http = HTTPURLResponse(url: URL(string: "https://api.github.com/x")!,
+                                   statusCode: 200, httpVersion: nil, headerFields: nil)!
+
+        // An older install must see the release…
+        let stale = UpdateChecker.interpret(data: data, response: http, error: nil, current: "1.0.0")
+        guard case .available(let release) = stale else {
+            return XCTFail("expected an update from the live payload, got \(stale)")
+        }
+        XCTAssertFalse(release.version.isEmpty)
+        XCTAssertTrue(release.page.absoluteString.contains("/releases/tag/"))
+
+        // …and an install of that same version must not.
+        let current = UpdateChecker.interpret(data: data, response: http, error: nil, current: release.version)
+        guard case .upToDate = current else {
+            return XCTFail("the shipped version must read as up to date, got \(current)")
+        }
+    }
+}

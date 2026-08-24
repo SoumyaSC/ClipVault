@@ -9,7 +9,25 @@ and how a release is cut.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Fixed
+
+- **The release workflow no longer fights `release.sh --publish`.** Both tried to
+  create the GitHub release, so the tag push failed with "a release with the same
+  tag name already exists". CI now fills gaps instead: it leaves published assets
+  untouched — the Homebrew cask's checksum is computed from the published zip, and
+  a rebuilt one would break `brew install` — and attaches only what is missing,
+  which in practice is the DMG a wedged local `diskimages-helper` cannot produce.
+- **Honest Homebrew instructions.** Homebrew quarantines cask downloads by
+  default, so an ad-hoc signed app can still be refused on first launch; the
+  README now says so and gives both ways around it.
+- The cask uses the non-deprecated `depends_on macos:` form, so `brew install` no
+  longer prints a deprecation warning.
+
+### Added
+
+- A test that runs the update checker against a captured api.github.com payload,
+  so a renamed field in GitHub's response fails the suite instead of silently
+  turning update checks into a no-op.
 
 ## [1.1.0] — 2026-08-25
 

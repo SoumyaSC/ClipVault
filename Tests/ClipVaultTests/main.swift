@@ -63,6 +63,7 @@ func runUpdateCheckerTests() -> Int {
     run("testRateLimitOrOutageReportsFailure") { $0.testRateLimitOrOutageReportsFailure() }
     run("testNetworkErrorReportsFailure") { $0.testNetworkErrorReportsFailure() }
     run("testGarbageBodyReportsFailure") { $0.testGarbageBodyReportsFailure() }
+    run("testRealGitHubPayloadIsUnderstood") { $0.testRealGitHubPayloadIsUnderstood() }
 
     return count
 }
