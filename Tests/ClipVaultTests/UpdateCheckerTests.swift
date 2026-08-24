@@ -111,7 +111,7 @@ final class UpdateCheckerTests: XCTestCase {
 
 extension UpdateCheckerTests {
 
-    /// Captured from api.github.com for the v1.1.0 release. Guards the decoder
+    /// Captured from api.github.com (refresh it with `curl` after a release). Guards the decoder
     /// against the live response shape — a checker that silently stops working
     /// because a field was renamed is worse than no checker.
     private func liveFixture() -> Data? {
@@ -135,6 +135,15 @@ extension UpdateCheckerTests {
         }
         XCTAssertFalse(release.version.isEmpty)
         XCTAssertTrue(release.page.absoluteString.contains("/releases/tag/"))
+
+        // The case that matters in the field: the previously shipped version
+        // must see the one after it.
+        let previous = UpdateChecker.interpret(data: data, response: http, error: nil, current: "1.1.0")
+        if release.version != "1.1.0" {
+            guard case .available = previous else {
+                return XCTFail("1.1.0 should see \(release.version), got \(previous)")
+            }
+        }
 
         // …and an install of that same version must not.
         let current = UpdateChecker.interpret(data: data, response: http, error: nil, current: release.version)
