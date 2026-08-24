@@ -81,5 +81,5 @@ and how a release is cut.
 before the project was put under version control, so there is no commit, tag, or
 published archive for them.
 
-[Unreleased]: https://github.com/OWNER/ClipVault/compare/v1.0.7...HEAD
-[1.0.7]: https://github.com/OWNER/ClipVault/releases/tag/v1.0.7
+[Unreleased]: https://github.com/SoumyaSC/ClipVault/compare/v1.0.7...HEAD
+[1.0.7]: https://github.com/SoumyaSC/ClipVault/releases/tag/v1.0.7
