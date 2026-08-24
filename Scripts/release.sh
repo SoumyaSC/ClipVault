@@ -209,7 +209,7 @@ cask "clipvault" do
   desc "Menu bar clipboard manager for text and images"
   homepage "https://github.com/$(cv_repo_slug)"
 
-  depends_on macos: ">= :ventura"
+  depends_on macos: :ventura
 
   app "ClipVault.app"
 

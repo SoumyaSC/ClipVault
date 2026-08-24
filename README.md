@@ -41,8 +41,15 @@ you copy — captured silently, searchable instantly, pasteable anywhere.
 brew install --cask soumyasc/tap/clipvault
 ```
 
-Brew-installed apps aren't quarantine-flagged, so Gatekeeper never prompts.
 Upgrade later with `brew upgrade --cask clipvault`.
+
+ClipVault is ad-hoc signed rather than notarised, and Homebrew quarantines cask
+downloads by default, so macOS may refuse the first launch. Either open it once
+with **right-click → Open → Open**, or install without the quarantine flag:
+
+```sh
+brew install --cask --no-quarantine soumyasc/tap/clipvault
+```
 
 ### Direct download
 
